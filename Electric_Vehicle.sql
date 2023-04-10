@@ -134,10 +134,10 @@ WITH Numerator AS
 			GROUP BY [Model Year], Make
 			) a
 		) b
-	WHERE b.ranking = 1)
+	WHERE b.ranking = 1) --Select the highest vehicle counts
 
 SELECT num.*, den.total_vehicles_count
-	,ROUND((CONVERT(float, num.vehicles_count)/CONVERT(float, den.total_vehicles_count)*100), 2) as Percentage_of_the_most_popular_make
+	,ROUND((CONVERT(float, num.vehicles_count)/CONVERT(float, den.total_vehicles_count)*100), 2) as Percentage_of_the_most_popular_make --Convert data types and round the result to 2 decimal digits
 FROM Numerator num
 	
 	LEFT JOIN
@@ -165,5 +165,5 @@ FROM
 		GROUP BY [Model Year], Electric_Utility
 		) a
 	) b
-WHERE b.ranking = 1
+WHERE b.ranking = 1 --Select the highest vehicle makes
 ORDER BY b.[Model Year]
