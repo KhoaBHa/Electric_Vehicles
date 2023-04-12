@@ -134,25 +134,25 @@ WHERE [County] is null
 	WHERE Base_MSRP =
 		(SELECT MAX(Base_MSRP) FROM EVs)
 
-	--Percentage of the most popular make/model for each model year
-			--Create a temporary table to store the numerators
-		--DROP TABLE IF EXISTS #numerator
-		CREATE TABLE #numerator
-		(Model_year float, Make nvarchar(255), numerator float, numerator_ranking int)
+--***Percentage of the most popular make/model for each model year
+		--Create a temporary table to store the numerators
+	--DROP TABLE IF EXISTS #numerator
+	CREATE TABLE #numerator
+	(Model_year float, Make nvarchar(255), numerator float, numerator_ranking int)
 
-		INSERT INTO #numerator
-		SELECT b.[Model Year], b.Make, b.numerator
-		--Assign ranks to the count. Rank 1 means the highest count
-		, RANK() OVER (PARTITION BY b.[Model Year] ORDER BY b.[Model Year], b.numerator desc) as numerator_ranking
-		FROM (
-			SELECT a.[Model Year], a.Make, COUNT(*) as numerator  --Calculate the make count for each model year
-			FROM 
-				(SELECT DISTINCT [Model Year], VIN, Make
-				FROM EVs
-				GROUP BY [Model Year], VIN, Make) a
-			GROUP BY a.[Model Year], a.Make) b
+	INSERT INTO #numerator
+	SELECT b.[Model Year], b.Make, b.numerator
+	--Assign ranks to the count. Rank 1 means the highest count
+	, RANK() OVER (PARTITION BY b.[Model Year] ORDER BY b.[Model Year], b.numerator desc) as numerator_ranking
+	FROM (
+		SELECT a.[Model Year], a.Make, COUNT(*) as numerator  --Calculate the make count for each model year
+		FROM 
+			(SELECT DISTINCT [Model Year], VIN, Make
+			FROM EVs
+			GROUP BY [Model Year], VIN, Make) a
+		GROUP BY a.[Model Year], a.Make) b
 	
-		--Create a CTE with distinct model year, VIN, and Make. The total count serves as the denominator
+	--Create a CTE with distinct model year, VIN, and Make. The total count serves as the denominator
 	WITH CTE_total_count AS (
 	SELECT a.[Model Year], COUNT(*) as denominator
 	FROM (
@@ -170,10 +170,7 @@ WHERE [County] is null
 	ORDER BY den.[Model Year]
 	
 
-
-
-
---Which electric utility company has provided energy to the most EV owners in WA
+--***Which electric utility company has provided energy to the most EV owners in WA
 SELECT TOP 1
 	Electric_Utility, COUNT(*) as numbers_of_serviced_owners
 FROM EVs
