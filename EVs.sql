@@ -135,7 +135,7 @@ WHERE [County] is null
 		(SELECT MAX(Base_MSRP) FROM EVs)
 
 --***Percentage of the most popular make/model for each model year
-		--Create a temporary table to store the numerators
+	--Create a temporary table to store the numerators
 	--DROP TABLE IF EXISTS #numerator
 	CREATE TABLE #numerator
 	(Model_year float, Make nvarchar(255), numerator float, numerator_ranking int)
