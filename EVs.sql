@@ -2,7 +2,7 @@ SELECT *
 FROM EVs
 WHERE VIN = '5YJRE11B08'
 
-							--DATA CLEANSING
+										--DATA CLEANSING
 --Simplify the CAFV Eligibility
 UPDATE EVs
 SET CAFV_Eligibility = 
@@ -42,6 +42,13 @@ ADD latitude float
 UPDATE EVs
 SET latitude = SUBSTRING(Vehicle_Location, CHARINDEX(' ', Vehicle_Location)+1, LEN(Vehicle_Location))
 
+	--Add a new column which combines Model Year, Make, and Model
+ALTER TABLE EVs
+ADD Vehicles nvarchar(255)
+
+UPDATE EVs
+SET Vehicles = CONCAT_WS(' ', [Model Year], Make, Model)
+
 --Replace rows with null values
 UPDATE EVs
 SET [Legislative_District] = ISNULL([Legislative_District], 0) --[Legislative_District] column
@@ -54,7 +61,7 @@ WHERE [County] is null
 
 
 
-							--DATA EXPLORATION
+										--DATA EXPLORATION
 --***Create a temporary table with Unique VINs
 	--DROP TABLE IF EXISTS #unique_VIN
 	CREATE TABLE #unique_VIN
@@ -62,16 +69,6 @@ WHERE [County] is null
 
 	INSERT INTO #unique_VIN
 	SELECT DISTINCT [Model Year], VIN
-	FROM EVs
-
-
---***Create a temporary table with Unique VINs
-	--DROP TABLE IF EXISTS #unique_licenses
-	CREATE TABLE #unique_licenses
-	(new_model_year float, unique_licenses nvarchar(255))
-
-	INSERT INTO #unique_licenses
-	SELECT DISTINCT [Model Year], DOL_Vehicle_ID
 	FROM EVs
 
 
@@ -91,10 +88,8 @@ WHERE [County] is null
 	SELECT DOL_Vehicle_ID, COUNT(*)
 	FROM EVs
 	GROUP BY DOL_Vehicle_ID
-
-		--Count the number of unique licenses
-	SELECT COUNT(*)
-	FROM #unique_licenses
+	ORDER BY COUNT(*) desc
+		--Conclusion: The top result for count is 1, which indicates there is no duplicate.
 
 	SELECT COUNT(*)
 	FROM EVs --Conclusion: the total of unique licenses equals to the total number of rows of the EVs table
@@ -171,36 +166,57 @@ WHERE [County] is null
 	
 
 --***Which electric utility company has provided energy to the most EV owners in WA
-SELECT TOP 1
-	Electric_Utility, COUNT(*) as numbers_of_serviced_owners
-FROM EVs
-GROUP BY [Model Year], Electric_Utility
-ORDER BY [Model Year] desc
+	SELECT TOP 1
+		Electric_Utility, COUNT(*) as numbers_of_serviced_owners
+	FROM EVs
+	GROUP BY [Model Year], Electric_Utility
+	ORDER BY [Model Year] desc
 
+--***Top 10 vehicles by volumes
+	--Left join the #unique_Vin temp table with the EVs table to retrieve the vehicles' names
+	WITH CTE_vehicles_by_volumes AS (	
+		SELECT un.unique_VIN, ev.Vehicles
+		FROM #unique_VIN un
+		LEFT JOIN EVs ev
+			ON un.unique_VIN = ev.VIN
+		GROUP BY un.unique_VIN, ev.Vehicles)
+	
+	--Select top 10 vehicles by volumes
+	SELECT TOP 10
+		Vehicles, COUNT(*) as Volumes
+	FROM CTE_vehicles_by_volumes
+	GROUP BY Vehicles
+	ORDER BY COUNT(*) desc
 
-							--CREATE VIEW FOR DATA VISUALIZATION
+--***Top 10 vehicles by customers
+	SELECT TOP 10
+		Vehicles, COUNT(*) as Numbers_of_customers
+	FROM EVs
+	GROUP BY Vehicles
+	ORDER BY COUNT(*) desc
+										--CREATE VIEW FOR DATA VISUALIZATION
 --DROP VIEW IF EXISTS EV_DATA
-CREATE VIEW EV_DATA AS
-SELECT [VIN]
-      ,[County]
-      ,[City]
-      ,[State]
-      ,[Postal Code]
-      ,[Model Year]
-      ,[Make]
-      ,[Model]
-      ,[Electric_Vehicle_Type]
-      ,[CAFV_Eligibility]
-      ,[Electric_Range]
-      ,[Base_MSRP]
-    --,[Legislative_District]
-    --,[DOL_Vehicle_ID]
-    --,[Vehicle_Location]
-      ,[Electric_Utility]
-    --,[2020_Census_Tract]
-      ,[longitude]
-      ,[latitude]
-FROM [Portfolios].[dbo].[EVs]
+	CREATE VIEW EV_DATA AS
+	SELECT [VIN]
+		  ,[County]
+		  ,[City]
+		  ,[State]
+		  ,[Postal Code]
+		  ,[Model Year]
+		  ,[Make]
+		  ,[Model]
+		  ,[Electric_Vehicle_Type]
+		  ,[CAFV_Eligibility]
+		  ,[Electric_Range]
+		  ,[Base_MSRP]
+		--,[Legislative_District]
+		--,[DOL_Vehicle_ID]
+		--,[Vehicle_Location]
+		  ,[Electric_Utility]
+		--,[2020_Census_Tract]
+		  ,[longitude]
+		  ,[latitude]
+	FROM [Portfolios].[dbo].[EVs]
 
-SELECT *
-FROM EV_DATA
+	SELECT *
+	FROM EV_DATA
