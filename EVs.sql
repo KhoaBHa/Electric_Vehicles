@@ -194,6 +194,39 @@ WHERE [County] is null
 	FROM EVs
 	GROUP BY Vehicles
 	ORDER BY COUNT(*) desc
+
+--***Ratio between top 10 brands by customers and number of vehicles
+	--Create a temporary table that contains brand and the corresponding number of vehicles
+		--DROP TABLE IF EXISTS #unique_VIN_by_make
+		CREATE TABLE #unique_VIN_by_make
+		(Brand nvarchar(255), unique_VIN nvarchar(255))
+
+		INSERT INTO #unique_VIN_by_make
+		SELECT DISTINCT Make, VIN
+		FROM EVs
+	
+	--Create a CTE that contains the top 10 brands by number of customers
+	WITH CTE_top_10 AS (
+		SELECT TOP 10
+			Make, COUNT(*) as Numbers_of_customers
+		FROM EVs
+		GROUP BY Make
+		ORDER BY COUNT(*) desc)
+
+	--Using JOIN to combine 2 tables, and take a division between numbers of customers and numbers of vehicles
+	--The larger the result means the more frequently customers switch vehicles, which indicates low ownership rate.
+	SELECT 
+		a.Brand, a.Numbers_of_vehicles, cte.Numbers_of_customers
+		, cte.Numbers_of_customers/a.Numbers_of_vehicles as Ratio_customers_to_vehicles
+	FROM CTE_top_10 cte
+	JOIN (
+		SELECT Brand, COUNT(*) as Numbers_of_vehicles
+		FROM #unique_VIN_by_make
+		GROUP BY Brand) a
+	ON cte.Make = a.Brand
+	ORDER BY cte.Numbers_of_customers desc
+
+
 										--CREATE VIEW FOR DATA VISUALIZATION
 --DROP VIEW IF EXISTS EV_DATA
 	CREATE VIEW EV_DATA AS
